@@ -37,4 +37,15 @@ final class HelpRequestFormViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+
+    func reset() {
+        category = ""
+        subcategory = ""
+        description = ""
+        location = ""
+        contactInfo = ""
+        isSubmitting = false
+        errorMessage = nil
+        submittedRequest = nil
+    }
 }

@@ -75,4 +75,9 @@ final class HelpRequestService {
         let endpoint = APIEndpoint(path: "/help-requests/me", method: .get, requiresAuth: true)
         return try await client.request(endpoint)
     }
+
+    func cancelHelpRequest(id: UUID) async throws -> HelpRequestDetail {
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/cancel", method: .post, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
 }

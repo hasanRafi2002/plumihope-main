@@ -87,3 +87,16 @@ def claim_help_request(db: Session, help_request_id: uuid.UUID, current_user_id:
     repository.create_event(db, help_request_id, current_user_id, "CLAIMED")
 
     return help_request
+
+
+def cancel_help_request(db: Session, help_request_id: uuid.UUID, current_user_id: uuid.UUID) -> HelpRequest:
+    help_request = get_help_request_or_404(db, help_request_id)
+
+    if help_request.user_id != current_user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this request")
+
+    validate_transition(help_request.status, "CANCELLED")
+    help_request = repository.update_status(db, help_request, "CANCELLED")
+    repository.create_event(db, help_request_id, current_user_id, "CANCELLED")
+
+    return help_request

@@ -31,6 +31,7 @@ struct HelpRequestSubmittedView: View {
             Spacer()
 
             Button("Done") {
+                viewModel.reset()
                 path.wrappedValue = NavigationPath()
             }
             .buttonStyle(.borderedProminent)

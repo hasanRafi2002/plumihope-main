@@ -6,6 +6,9 @@ struct HelpRequestStatusView: View {
     @State private var request: HelpRequestDetail?
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var isCancelling = false
+    @State private var showCancelConfirm = false
+    @State private var cancelErrorMessage: String?
 
     private let service = HelpRequestService.shared
 
@@ -51,6 +54,31 @@ struct HelpRequestStatusView: View {
                             .foregroundColor(.secondary)
 
                         timelineView(current: request.status)
+
+                        if request.status == "SUBMITTED" || request.status == "AVAILABLE" {
+                            Divider()
+
+                            if let cancelErrorMessage = cancelErrorMessage {
+                                Text(cancelErrorMessage)
+                                    .font(.footnote)
+                                    .foregroundColor(.red)
+                            }
+
+                            Button(role: .destructive) {
+                                showCancelConfirm = true
+                            } label: {
+                                if isCancelling {
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity)
+                                } else {
+                                    Text("Cancel request")
+                                        .frame(maxWidth: .infinity)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
+                            .disabled(isCancelling)
+                        }
                     }
                     .padding()
                 }
@@ -60,6 +88,18 @@ struct HelpRequestStatusView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await load()
+        }
+        .confirmationDialog(
+            "Cancel this request?",
+            isPresented: $showCancelConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Cancel request", role: .destructive) {
+                Task { await cancelRequest() }
+            }
+            Button("Keep request", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
         }
     }
 
@@ -92,5 +132,16 @@ struct HelpRequestStatusView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func cancelRequest() async {
+        isCancelling = true
+        cancelErrorMessage = nil
+        do {
+            request = try await service.cancelHelpRequest(id: requestId)
+        } catch {
+            cancelErrorMessage = error.localizedDescription
+        }
+        isCancelling = false
     }
 }

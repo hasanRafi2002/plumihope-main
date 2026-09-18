@@ -76,3 +76,12 @@ def submit_eligibility_decision(
     db: Session = Depends(get_db),
 ):
     return service.submit_eligibility_decision(db, help_request_id, current_user.id, payload.eligible, payload.notes)
+
+
+@router.post("/{help_request_id}/cancel", response_model=HelpRequestDetail)
+def cancel_help_request(
+    help_request_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.cancel_help_request(db, help_request_id, current_user.id)
