@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.modules.users.models import User
+from app.modules.users.models import User, Role, UserRole
 from app.modules.auth.models import RefreshToken
 
 
@@ -20,6 +20,12 @@ def create_user(db: Session, full_name: str, email: str, password_hash: str) -> 
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    user_role = db.query(Role).filter(Role.name == "USER").first()
+    if user_role:
+        db.add(UserRole(user_id=user.id, role_id=user_role.id))
+        db.commit()
+
     return user
 
 
