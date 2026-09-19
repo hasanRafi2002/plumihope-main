@@ -141,7 +141,7 @@ struct ProfileView: View {
                         Task { await viewModel.load() }
                     }
                 case .agentWorkspace:
-                    AgentWorkspaceView()
+                    AgentWorkspaceView(path: $path)
                 }
             }
             .navigationDestination(for: HelpRequestRoute.self) { route in
@@ -157,6 +157,9 @@ struct ProfileView: View {
                 case .detail(let donationId):
                     DonationDetailLoaderView(donationId: donationId)
                 }
+            }
+            .navigationDestination(for: UUID.self) { requestId in
+                InvestigationView(requestId: requestId)
             }
             .task {
                 await viewModel.load()

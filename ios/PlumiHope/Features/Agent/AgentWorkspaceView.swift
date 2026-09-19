@@ -3,6 +3,7 @@ import SwiftUI
 struct AgentWorkspaceView: View {
     @StateObject private var viewModel = AgentCasesViewModel()
     @State private var selectedTab: CasesTab = .available
+    var path: Binding<NavigationPath>
 
     enum CasesTab: String, CaseIterable {
         case available = "Available"
@@ -127,20 +128,25 @@ struct AgentWorkspaceView: View {
     }
 
     private func caseRow(_ request: HelpRequestDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(request.category.capitalized.replacingOccurrences(of: "_", with: " "))
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text(request.description)
-                .font(.body)
-                .lineLimit(2)
-            Text("● " + request.status.capitalized.replacingOccurrences(of: "_", with: " "))
-                .font(.caption)
-                .fontWeight(.semibold)
+        Button {
+            path.wrappedValue.append(request.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(request.category.capitalized.replacingOccurrences(of: "_", with: " "))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text(request.description)
+                    .font(.body)
+                    .lineLimit(2)
+                Text("● " + request.status.capitalized.replacingOccurrences(of: "_", with: " "))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .buttonStyle(.plain)
     }
 
     private func emptyState(_ title: String, _ message: String) -> some View {

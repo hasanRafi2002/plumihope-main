@@ -96,6 +96,31 @@ def claim_help_request(db: Session, help_request_id: uuid.UUID, current_user_id:
     return help_request
 
 
+def add_investigation_note(db: Session, help_request_id: uuid.UUID, current_user_id: uuid.UUID, notes: str) -> HelpRequest:
+    help_request = get_help_request_or_404(db, help_request_id)
+    _get_owning_agent_claim(db, help_request_id, current_user_id)
+
+    repository.create_event(db, help_request_id, current_user_id, "INVESTIGATION_NOTE", notes)
+    return help_request
+
+
+def log_evidence_uploaded(
+    db: Session, help_request_id: uuid.UUID, current_user_id: uuid.UUID, media_id: uuid.UUID, evidence_type: str
+) -> HelpRequest:
+    help_request = get_help_request_or_404(db, help_request_id)
+    _get_owning_agent_claim(db, help_request_id, current_user_id)
+
+    repository.create_event(
+        db, help_request_id, current_user_id, "EVIDENCE_UPLOADED", f"{evidence_type}:{media_id}"
+    )
+    return help_request
+
+
+def list_events(db: Session, help_request_id: uuid.UUID):
+    get_help_request_or_404(db, help_request_id)
+    return repository.list_events(db, help_request_id)
+
+
 def cancel_help_request(db: Session, help_request_id: uuid.UUID, current_user_id: uuid.UUID) -> HelpRequest:
     help_request = get_help_request_or_404(db, help_request_id)
 

@@ -26,6 +26,22 @@ struct HelpRequestDetail: Codable, Identifiable {
     }
 }
 
+struct HelpRequestEvent: Codable, Identifiable {
+    let id: UUID
+    let actorId: UUID?
+    let eventType: String
+    let notes: String?
+    let occurredAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case actorId = "actor_id"
+        case eventType = "event_type"
+        case notes
+        case occurredAt = "occurred_at"
+    }
+}
+
 struct HelpRequestSummary: Codable, Identifiable {
     let id: UUID
     let userId: UUID
@@ -121,5 +137,40 @@ final class HelpRequestService {
     func claimHelpRequest(id: UUID) async throws -> HelpRequestDetail {
         let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/claim", method: .post, requiresAuth: true)
         return try await client.request(endpoint)
+    }
+
+    func startInvestigation(id: UUID) async throws -> HelpRequestDetail {
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/start-investigation", method: .post, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
+
+    func addInvestigationNote(id: UUID, notes: String) async throws -> HelpRequestDetail {
+        struct Body: Encodable { let notes: String }
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/notes", method: .post, requiresAuth: true)
+        return try await client.request(endpoint, body: Body(notes: notes))
+    }
+
+    func logEvidenceUploaded(id: UUID, mediaId: UUID, evidenceType: String) async throws -> HelpRequestDetail {
+        struct Body: Encodable {
+            let mediaId: UUID
+            let evidenceType: String
+            enum CodingKeys: String, CodingKey {
+                case mediaId = "media_id"
+                case evidenceType = "evidence_type"
+            }
+        }
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/evidence", method: .post, requiresAuth: true)
+        return try await client.request(endpoint, body: Body(mediaId: mediaId, evidenceType: evidenceType))
+    }
+
+    func listEvents(id: UUID) async throws -> [HelpRequestEvent] {
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/events", method: .get, requiresAuth: false)
+        return try await client.request(endpoint)
+    }
+
+    func submitEligibilityDecision(id: UUID, eligible: Bool, notes: String?) async throws -> HelpRequestDetail {
+        struct Body: Encodable { let eligible: Bool; let notes: String? }
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/eligibility", method: .post, requiresAuth: true)
+        return try await client.request(endpoint, body: Body(eligible: eligible, notes: notes))
     }
 }

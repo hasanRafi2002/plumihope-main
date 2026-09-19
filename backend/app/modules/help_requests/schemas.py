@@ -28,3 +28,22 @@ class HelpRequestPublic(BaseModel):
 class HelpRequestDetail(HelpRequestPublic):
     contact_info: str | None
     updated_at: datetime
+
+
+class HelpRequestEventPublic(BaseModel):
+    id: uuid.UUID
+    actor_id: uuid.UUID | None
+    event_type: str
+    notes: str | None
+    occurred_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InvestigationNoteCreate(BaseModel):
+    notes: str = Field(min_length=1)
+
+
+class InvestigationEvidenceCreate(BaseModel):
+    media_id: uuid.UUID
+    evidence_type: str = Field(min_length=1, max_length=64)

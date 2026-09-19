@@ -8,7 +8,14 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.help_requests import service
-from app.modules.help_requests.schemas import HelpRequestCreate, HelpRequestPublic, HelpRequestDetail
+from app.modules.help_requests.schemas import (
+    HelpRequestCreate,
+    HelpRequestPublic,
+    HelpRequestDetail,
+    HelpRequestEventPublic,
+    InvestigationNoteCreate,
+    InvestigationEvidenceCreate,
+)
 from app.modules.users.models import User
 
 
@@ -93,3 +100,31 @@ def cancel_help_request(
     db: Session = Depends(get_db),
 ):
     return service.cancel_help_request(db, help_request_id, current_user.id)
+
+
+@router.post("/{help_request_id}/notes", response_model=HelpRequestDetail)
+def add_investigation_note(
+    help_request_id: uuid.UUID,
+    payload: InvestigationNoteCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.add_investigation_note(db, help_request_id, current_user.id, payload.notes)
+
+
+@router.post("/{help_request_id}/evidence", response_model=HelpRequestDetail)
+def log_evidence_uploaded(
+    help_request_id: uuid.UUID,
+    payload: InvestigationEvidenceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.log_evidence_uploaded(db, help_request_id, current_user.id, payload.media_id, payload.evidence_type)
+
+
+@router.get("/{help_request_id}/events", response_model=list[HelpRequestEventPublic])
+def list_events(
+    help_request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    return service.list_events(db, help_request_id)

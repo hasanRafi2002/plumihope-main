@@ -79,3 +79,12 @@ def create_event(db: Session, help_request_id: uuid.UUID, actor_id: uuid.UUID | 
     db.commit()
     db.refresh(event)
     return event
+
+
+def list_events(db: Session, help_request_id: uuid.UUID) -> list[HelpRequestEvent]:
+    return (
+        db.query(HelpRequestEvent)
+        .filter(HelpRequestEvent.help_request_id == help_request_id)
+        .order_by(HelpRequestEvent.occurred_at.asc())
+        .all()
+    )
