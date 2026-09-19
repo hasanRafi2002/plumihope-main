@@ -4,10 +4,12 @@ import Combine
 @MainActor
 final class ProfileViewModel: ObservableObject {
     @Published var user: User?
+    @Published var agentProfile: AgentProfileDetail?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
     private let service = UserService.shared
+    private let agentService = AgentService.shared
 
     func load() async {
         isLoading = true
@@ -19,5 +21,7 @@ final class ProfileViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+
+        agentProfile = try? await agentService.getMyAgentProfile()
     }
 }

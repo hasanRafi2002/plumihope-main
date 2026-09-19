@@ -31,6 +31,14 @@ def list_agents(
     return service.list_agents(db, status)
 
 
+@router.get("/me", response_model=AgentProfileDetail | None)
+def get_my_agent_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.get_my_agent_profile(db, current_user.id)
+
+
 @router.get("/{agent_profile_id}", response_model=AgentProfileDetail)
 def get_agent(agent_profile_id: uuid.UUID, db: Session = Depends(get_db)):
     return service.get_agent_or_404(db, agent_profile_id)

@@ -29,6 +29,13 @@ def list_my_help_requests(db: Session, user_id: uuid.UUID, status: str | None = 
     return repository.list_by_user(db, user_id, status)
 
 
+def list_my_cases(db: Session, current_user_id: uuid.UUID) -> list[HelpRequest]:
+    agent_profile = db.query(AgentProfile).filter(AgentProfile.user_id == current_user_id).first()
+    if not agent_profile:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires Agent profile")
+    return repository.list_claimed_by_agent(db, agent_profile.id)
+
+
 def get_help_request_or_404(db: Session, help_request_id: uuid.UUID) -> HelpRequest:
     help_request = repository.get_help_request(db, help_request_id)
     if not help_request:

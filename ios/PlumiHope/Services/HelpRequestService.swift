@@ -26,6 +26,28 @@ struct HelpRequestDetail: Codable, Identifiable {
     }
 }
 
+struct HelpRequestSummary: Codable, Identifiable {
+    let id: UUID
+    let userId: UUID
+    let category: String
+    let subcategory: String?
+    let description: String
+    let location: String?
+    let status: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case category
+        case subcategory
+        case description
+        case location
+        case status
+        case createdAt = "created_at"
+    }
+}
+
 struct HelpRequestCreateRequest: Encodable {
     let category: String
     let subcategory: String?
@@ -78,6 +100,26 @@ final class HelpRequestService {
 
     func cancelHelpRequest(id: UUID) async throws -> HelpRequestDetail {
         let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/cancel", method: .post, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
+
+    func listAvailableHelpRequests() async throws -> [HelpRequestSummary] {
+        let endpoint = APIEndpoint(
+            path: "/help-requests",
+            method: .get,
+            requiresAuth: false,
+            queryItems: [URLQueryItem(name: "status", value: "AVAILABLE")]
+        )
+        return try await client.request(endpoint)
+    }
+
+    func listMyCases() async throws -> [HelpRequestDetail] {
+        let endpoint = APIEndpoint(path: "/help-requests/agent/cases", method: .get, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
+
+    func claimHelpRequest(id: UUID) async throws -> HelpRequestDetail {
+        let endpoint = APIEndpoint(path: "/help-requests/\(id.uuidString)/claim", method: .post, requiresAuth: true)
         return try await client.request(endpoint)
     }
 }

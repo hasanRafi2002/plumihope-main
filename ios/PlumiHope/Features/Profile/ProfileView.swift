@@ -63,6 +63,53 @@ struct ProfileView: View {
                             }
                         }
 
+                        Section("Agent") {
+                            if let agentProfile = viewModel.agentProfile {
+                                HStack {
+                                    Text(agentStatusLabel(agentProfile.status))
+                                    Spacer()
+                                    if agentProfile.status == "VERIFIED" {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+
+                                if agentProfile.status == "VERIFIED" {
+                                    Button {
+                                        path.append(ProfileRoute.agentWorkspace)
+                                    } label: {
+                                        Label("Agent Workspace", systemImage: "briefcase")
+                                    }
+                                } else if agentProfile.status == "SUSPENDED" {
+                                    Text("Your Agent account is suspended. You cannot create new campaigns while suspended.")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                } else if agentProfile.status == "RESTRICTED" {
+                                    Text("Some Agent capabilities are temporarily limited while a review is in progress.")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                } else if agentProfile.status == "REVOKED" {
+                                    Text("Your Agent access has been revoked.")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                } else if agentProfile.status == "REJECTED" {
+                                    Text("Your Agent application was not approved.")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                } else {
+                                    Text("Your application is being reviewed.")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                Button {
+                                    path.append(ProfileRoute.becomeAgent)
+                                } label: {
+                                    Label("Apply to become an Agent", systemImage: "person.badge.plus")
+                                }
+                            }
+                        }
+
                         Section {
                             Button(role: .destructive) {
                                 authManager.logout()
@@ -88,6 +135,13 @@ struct ProfileView: View {
                             Task { await viewModel.load() }
                         }
                     }
+                case .becomeAgent:
+                    AgentApplicationView {
+                        if !path.isEmpty { path.removeLast() }
+                        Task { await viewModel.load() }
+                    }
+                case .agentWorkspace:
+                    AgentWorkspaceView()
                 }
             }
             .navigationDestination(for: HelpRequestRoute.self) { route in
@@ -109,6 +163,10 @@ struct ProfileView: View {
             }
         }
     }
+
+    private func agentStatusLabel(_ status: String) -> String {
+        status.capitalized.replacingOccurrences(of: "_", with: " ")
+    }
 }
 
 enum ProfileRoute: Hashable {
@@ -116,6 +174,8 @@ enum ProfileRoute: Hashable {
     case myDonations
     case notifications
     case editProfile
+    case becomeAgent
+    case agentWorkspace
 }
 
 #Preview {

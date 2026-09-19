@@ -22,6 +22,10 @@ def list_agents(db: Session, status: str | None = None) -> list[AgentProfile]:
     return repository.list_by_status(db, status)
 
 
+def get_my_agent_profile(db: Session, user_id: uuid.UUID) -> AgentProfile | None:
+    return repository.get_by_user_id(db, user_id)
+
+
 def get_agent_or_404(db: Session, agent_profile_id: uuid.UUID) -> AgentProfile:
     profile = repository.get_by_id(db, agent_profile_id)
     if not profile:

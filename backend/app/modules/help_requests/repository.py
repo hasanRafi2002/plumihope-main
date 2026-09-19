@@ -57,6 +57,16 @@ def get_active_claim(db: Session, help_request_id: uuid.UUID) -> HelpRequestAgen
     )
 
 
+def list_claimed_by_agent(db: Session, agent_profile_id: uuid.UUID) -> list[HelpRequest]:
+    return (
+        db.query(HelpRequest)
+        .join(HelpRequestAgent, HelpRequestAgent.help_request_id == HelpRequest.id)
+        .filter(HelpRequestAgent.agent_profile_id == agent_profile_id)
+        .order_by(HelpRequest.created_at.desc())
+        .all()
+    )
+
+
 def create_event(db: Session, help_request_id: uuid.UUID, actor_id: uuid.UUID | None, event_type: str, notes: str | None = None) -> HelpRequestEvent:
     event = HelpRequestEvent(
         help_request_id=help_request_id,
