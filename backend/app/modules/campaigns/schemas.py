@@ -23,6 +23,17 @@ class CampaignUpdateRequest(BaseModel):
     description: str | None = None
     target_amount: Decimal | None = Field(default=None, gt=0)
     end_date: date | None = None
+    recipient_name: str | None = Field(default=None, max_length=255)
+    recipient_relationship: str | None = Field(default=None, max_length=128)
+    payout_destination_ref: str | None = Field(default=None, max_length=255)
+
+
+class CampaignCategoryPublic(BaseModel):
+    id: uuid.UUID
+    name: str
+    parent_id: uuid.UUID | None
+
+    model_config = {"from_attributes": True}
 
 
 class CampaignPublic(BaseModel):

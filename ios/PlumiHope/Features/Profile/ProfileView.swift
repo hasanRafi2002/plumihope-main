@@ -161,6 +161,14 @@ struct ProfileView: View {
             .navigationDestination(for: UUID.self) { requestId in
                 InvestigationView(requestId: requestId)
             }
+            .navigationDestination(for: CampaignCreationRoute.self) { route in
+                switch route {
+                case .create(let helpRequest):
+                    CreateCampaignView(helpRequest: helpRequest) {
+                        // campaign submitted; nothing further to refresh here
+                    }
+                }
+            }
             .task {
                 await viewModel.load()
             }

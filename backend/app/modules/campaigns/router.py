@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.campaigns import service
-from app.modules.campaigns.schemas import CampaignCreate, CampaignUpdateRequest, CampaignPublic, CampaignDetail, CampaignEvidenceCreate, CampaignEvidencePublic, WhyVerifiedResponse, AssistanceProofSubmit
+from app.modules.campaigns.schemas import CampaignCreate, CampaignUpdateRequest, CampaignPublic, CampaignDetail, CampaignEvidenceCreate, CampaignEvidencePublic, WhyVerifiedResponse, AssistanceProofSubmit, CampaignCategoryPublic
 from app.schemas.pagination import PaginatedResponse
 from app.modules.users.models import User
 
@@ -40,6 +40,11 @@ def discover_campaigns(
     db: Session = Depends(get_db),
 ):
     return service.discover_campaigns(db, category_id, status, q, page, page_size)
+
+
+@router.get("/categories", response_model=list[CampaignCategoryPublic])
+def list_categories(db: Session = Depends(get_db)):
+    return service.list_categories(db)
 
 
 @router.get("/{campaign_id}", response_model=CampaignDetail)

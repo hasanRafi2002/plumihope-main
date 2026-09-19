@@ -19,6 +19,10 @@ def _get_agent_profile_or_403(db: Session, user_id: uuid.UUID) -> AgentProfile:
     return profile
 
 
+def list_categories(db: Session):
+    return repository.list_categories(db)
+
+
 def create_campaign(db: Session, user_id: uuid.UUID, payload: CampaignCreate) -> Campaign:
     agent_profile = _get_agent_profile_or_403(db, user_id)
 

@@ -129,7 +129,11 @@ struct AgentWorkspaceView: View {
 
     private func caseRow(_ request: HelpRequestDetail) -> some View {
         Button {
-            path.wrappedValue.append(request.id)
+            if request.status == "ELIGIBLE" {
+                path.wrappedValue.append(CampaignCreationRoute.create(request))
+            } else {
+                path.wrappedValue.append(request.id)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 Text(request.category.capitalized.replacingOccurrences(of: "_", with: " "))

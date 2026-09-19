@@ -2,7 +2,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.modules.campaigns.models import Campaign, CampaignEvidence
+from app.modules.campaigns.models import Campaign, CampaignEvidence, CampaignCategory
+
+
+def list_categories(db: Session) -> list[CampaignCategory]:
+    return db.query(CampaignCategory).order_by(CampaignCategory.name).all()
 
 
 def create_campaign(db: Session, agent_profile_id: uuid.UUID, data: dict) -> Campaign:
