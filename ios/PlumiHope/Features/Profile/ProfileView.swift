@@ -169,6 +169,15 @@ struct ProfileView: View {
                     }
                 }
             }
+            .navigationDestination(for: AgentCampaignsRoute.self) { route in
+                switch route {
+                case .myCampaigns:
+                    MyCampaignsView(path: $path)
+                }
+            }
+            .navigationDestination(for: CampaignManageRoute.self) { route in
+                CampaignManageView(campaignId: route.campaignId)
+            }
             .task {
                 await viewModel.load()
             }

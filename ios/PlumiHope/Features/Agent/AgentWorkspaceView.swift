@@ -12,6 +12,15 @@ struct AgentWorkspaceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button("My Campaigns") {
+                    path.wrappedValue.append(AgentCampaignsRoute.myCampaigns)
+                }
+                .font(.subheadline)
+                .padding(.trailing)
+            }
+
             Picker("", selection: $selectedTab) {
                 ForEach(CasesTab.allCases, id: \.self) { tab in
                     Text(tab.rawValue).tag(tab)
@@ -57,6 +66,12 @@ struct AgentWorkspaceView: View {
         }
         .refreshable {
             await viewModel.load()
+        }
+        .navigationDestination(for: AgentCampaignsRoute.self) { route in
+            switch route {
+            case .myCampaigns:
+                MyCampaignsView(path: path)
+            }
         }
     }
 

@@ -36,6 +36,10 @@ final class APIClient {
         _ = try await requestData(endpoint, body: body)
     }
 
+    func requestRawData(_ endpoint: APIEndpoint) async throws -> Data {
+        return try await requestData(endpoint, body: nil)
+    }
+
     private func requestData(_ endpoint: APIEndpoint, body: Encodable?, isRetry: Bool = false) async throws -> Data {
         guard var components = URLComponents(string: baseURL + endpoint.path) else {
             throw APIError.invalidURL

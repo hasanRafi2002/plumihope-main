@@ -86,6 +86,7 @@ struct CampaignEvidencePublic: Codable, Identifiable {
     let id: UUID
     let campaignId: UUID
     let evidenceType: String
+    let mediaId: UUID?
     let visibility: String
     let verificationStatus: String
     let createdAt: Date
@@ -94,8 +95,26 @@ struct CampaignEvidencePublic: Codable, Identifiable {
         case id
         case campaignId = "campaign_id"
         case evidenceType = "evidence_type"
+        case mediaId = "media_id"
         case visibility
         case verificationStatus = "verification_status"
+        case createdAt = "created_at"
+    }
+}
+
+
+struct CampaignUpdatePublic: Codable, Identifiable {
+    let id: UUID
+    let campaignId: UUID
+    let authorId: UUID
+    let content: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case campaignId = "campaign_id"
+        case authorId = "author_id"
+        case content
         case createdAt = "created_at"
     }
 }

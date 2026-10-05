@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.modules.campaigns.models import Campaign, CampaignEvidence, CampaignCategory
+from app.modules.campaigns.models import Campaign, CampaignEvidence, CampaignCategory, CampaignUpdate
 
 
 def list_categories(db: Session) -> list[CampaignCategory]:
@@ -30,6 +30,32 @@ def list_campaigns(db: Session, status: str | None = None) -> list[Campaign]:
     if status:
         query = query.filter(Campaign.status == status)
     return query.order_by(Campaign.created_at.desc()).all()
+
+
+def list_by_agent(db: Session, agent_profile_id: uuid.UUID) -> list[Campaign]:
+    return (
+        db.query(Campaign)
+        .filter(Campaign.agent_profile_id == agent_profile_id)
+        .order_by(Campaign.created_at.desc())
+        .all()
+    )
+
+
+def create_update(db: Session, campaign_id: uuid.UUID, author_id: uuid.UUID, content: str) -> CampaignUpdate:
+    update = CampaignUpdate(campaign_id=campaign_id, author_id=author_id, content=content)
+    db.add(update)
+    db.commit()
+    db.refresh(update)
+    return update
+
+
+def list_updates(db: Session, campaign_id: uuid.UUID) -> list[CampaignUpdate]:
+    return (
+        db.query(CampaignUpdate)
+        .filter(CampaignUpdate.campaign_id == campaign_id)
+        .order_by(CampaignUpdate.created_at.desc())
+        .all()
+    )
 
 
 def update_fields(db: Session, campaign: Campaign, updates: dict) -> Campaign:

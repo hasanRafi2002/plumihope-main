@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.media import storage
 from app.modules.media.models import Media
 from app.modules.media.schemas import ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES
+from app.modules.users import repository as users_repository
 
 
 def upload_media(db: Session, owner_id: uuid.UUID, file: UploadFile, visibility: str = "RESTRICTED") -> Media:
@@ -45,3 +46,24 @@ def get_media_or_404(db: Session, media_id: uuid.UUID) -> Media:
     if not media:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
     return media
+
+
+def check_media_view_access(db: Session, media: Media, current_user_id: uuid.UUID) -> None:
+    if media.owner_id == current_user_id:
+        return
+    if media.visibility == "PUBLIC":
+        return
+    permission_codes = users_repository.get_user_permission_codes(db, current_user_id)
+    if "campaign:review" in permission_codes:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to view this file",
+    )
+
+
+def get_media_content(db: Session, media_id: uuid.UUID, current_user_id: uuid.UUID) -> tuple[bytes, str]:
+    media = get_media_or_404(db, media_id)
+    check_media_view_access(db, media, current_user_id)
+    file_bytes = storage.download_file(media.object_key)
+    return file_bytes, media.mime_type

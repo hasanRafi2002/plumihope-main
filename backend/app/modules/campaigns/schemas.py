@@ -75,6 +75,7 @@ class CampaignEvidencePublic(BaseModel):
     id: uuid.UUID
     campaign_id: uuid.UUID
     evidence_type: str
+    media_id: uuid.UUID | None = None
     visibility: str
     verification_status: str
     created_at: datetime
@@ -92,6 +93,20 @@ class WhyVerifiedResponse(BaseModel):
         "Verified means the listed checks were completed and reviewed. "
         "It is not a guarantee of absolute certainty."
     )
+
+
+class CampaignUpdateCreate(BaseModel):
+    content: str = Field(min_length=1)
+
+
+class CampaignUpdatePublic(BaseModel):
+    id: uuid.UUID
+    campaign_id: uuid.UUID
+    author_id: uuid.UUID
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class AssistanceProofSubmit(BaseModel):

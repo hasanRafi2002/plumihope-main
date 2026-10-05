@@ -6,7 +6,19 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.campaigns import service
-from app.modules.campaigns.schemas import CampaignCreate, CampaignUpdateRequest, CampaignPublic, CampaignDetail, CampaignEvidenceCreate, CampaignEvidencePublic, WhyVerifiedResponse, AssistanceProofSubmit, CampaignCategoryPublic
+from app.modules.campaigns.schemas import (
+    CampaignCreate,
+    CampaignUpdateRequest,
+    CampaignPublic,
+    CampaignDetail,
+    CampaignEvidenceCreate,
+    CampaignEvidencePublic,
+    WhyVerifiedResponse,
+    AssistanceProofSubmit,
+    CampaignCategoryPublic,
+    CampaignUpdateCreate,
+    CampaignUpdatePublic,
+)
 from app.schemas.pagination import PaginatedResponse
 from app.modules.users.models import User
 
@@ -47,9 +59,33 @@ def list_categories(db: Session = Depends(get_db)):
     return service.list_categories(db)
 
 
+@router.get("/me", response_model=list[CampaignDetail])
+def list_my_campaigns(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return service.list_my_campaigns(db, current_user.id)
+
+
 @router.get("/{campaign_id}", response_model=CampaignDetail)
 def get_campaign(campaign_id: uuid.UUID, db: Session = Depends(get_db)):
     return service.get_campaign_or_404(db, campaign_id)
+
+
+@router.post("/{campaign_id}/updates", response_model=CampaignUpdatePublic, status_code=201)
+def post_update(
+    campaign_id: uuid.UUID,
+    payload: CampaignUpdateCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service.post_update(db, campaign_id, current_user.id, payload.content)
+    return service.list_updates(db, campaign_id)[0]
+
+
+@router.get("/{campaign_id}/updates", response_model=list[CampaignUpdatePublic])
+def list_updates(campaign_id: uuid.UUID, db: Session = Depends(get_db)):
+    return service.list_updates(db, campaign_id)
 
 
 @router.patch("/{campaign_id}", response_model=CampaignDetail)

@@ -151,4 +151,53 @@ final class CampaignService {
         let endpoint = APIEndpoint(path: "/campaigns/\(campaignId.uuidString)/submit", method: .post, requiresAuth: true)
         return try await client.request(endpoint)
     }
+
+    func listMyCampaigns() async throws -> [CampaignDetail] {
+        let endpoint = APIEndpoint(path: "/campaigns/me", method: .get, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
+
+    func getCampaignDetail(id: UUID) async throws -> CampaignDetail {
+        let endpoint = APIEndpoint(path: "/campaigns/\(id.uuidString)", method: .get, requiresAuth: false)
+        return try await client.request(endpoint)
+    }
+
+    func postUpdate(campaignId: UUID, content: String) async throws -> CampaignUpdatePublic {
+        struct Body: Encodable { let content: String }
+        let endpoint = APIEndpoint(path: "/campaigns/\(campaignId.uuidString)/updates", method: .post, requiresAuth: true)
+        return try await client.request(endpoint, body: Body(content: content))
+    }
+
+    func listUpdates(campaignId: UUID) async throws -> [CampaignUpdatePublic] {
+        let endpoint = APIEndpoint(path: "/campaigns/\(campaignId.uuidString)/updates", method: .get, requiresAuth: false)
+        return try await client.request(endpoint)
+    }
+
+    func confirmAssistanceDelivered(campaignId: UUID) async throws -> CampaignDetail {
+        let endpoint = APIEndpoint(path: "/campaigns/\(campaignId.uuidString)/assistance/confirm-delivered", method: .post, requiresAuth: true)
+        return try await client.request(endpoint)
+    }
+
+    func submitAssistanceProof(
+        campaignId: UUID,
+        mediaId: UUID,
+        deliveryDate: String,
+        amountDelivered: String,
+        notes: String?
+    ) async throws -> CampaignDetail {
+        struct Body: Encodable {
+            let mediaId: UUID
+            let deliveryDate: String
+            let amountDelivered: String
+            let notes: String?
+            enum CodingKeys: String, CodingKey {
+                case mediaId = "media_id"
+                case deliveryDate = "delivery_date"
+                case amountDelivered = "amount_delivered"
+                case notes
+            }
+        }
+        let endpoint = APIEndpoint(path: "/campaigns/\(campaignId.uuidString)/assistance/proof", method: .post, requiresAuth: true)
+        return try await client.request(endpoint, body: Body(mediaId: mediaId, deliveryDate: deliveryDate, amountDelivered: amountDelivered, notes: notes))
+    }
 }

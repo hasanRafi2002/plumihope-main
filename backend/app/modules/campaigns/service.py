@@ -52,6 +52,25 @@ def list_campaigns(db: Session, status: str | None = None) -> list[Campaign]:
     return repository.list_campaigns(db, status)
 
 
+def list_my_campaigns(db: Session, user_id: uuid.UUID) -> list[Campaign]:
+    agent_profile = db.query(AgentProfile).filter(AgentProfile.user_id == user_id).first()
+    if not agent_profile:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires Agent profile")
+    return repository.list_by_agent(db, agent_profile.id)
+
+
+def post_update(db: Session, campaign_id: uuid.UUID, user_id: uuid.UUID, content: str) -> Campaign:
+    campaign = get_campaign_or_404(db, campaign_id)
+    _require_owner(db, campaign, user_id)
+    repository.create_update(db, campaign_id, user_id, content)
+    return campaign
+
+
+def list_updates(db: Session, campaign_id: uuid.UUID):
+    get_campaign_or_404(db, campaign_id)
+    return repository.list_updates(db, campaign_id)
+
+
 def get_campaign_or_404(db: Session, campaign_id: uuid.UUID) -> Campaign:
     campaign = repository.get_by_id(db, campaign_id)
     if not campaign:
