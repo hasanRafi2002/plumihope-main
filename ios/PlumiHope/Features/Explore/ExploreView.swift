@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ExploreView: View {
+    var isActive: Bool = true
     @StateObject private var viewModel = ExploreViewModel()
     @State private var path = NavigationPath()
 
@@ -41,9 +42,13 @@ struct ExploreView: View {
                                     CampaignCard(campaign: campaign)
                                 }
                                 .buttonStyle(.plain)
+                                .id("\(campaign.id.uuidString)-\(campaign.raisedAmount)-\(campaign.status)")
                             }
                         }
                         .padding()
+                    }
+                    .refreshable {
+                        await viewModel.loadCampaigns()
                     }
                 }
             }
@@ -66,6 +71,16 @@ struct ExploreView: View {
             }
             .task {
                 await viewModel.loadCampaigns()
+            }
+            .onChange(of: isActive) { active in
+                if active {
+                    Task { await viewModel.loadCampaigns() }
+                }
+            }
+            .onChange(of: path.count) { count in
+                if count == 0 {
+                    Task { await viewModel.loadCampaigns() }
+                }
             }
         }
     }
