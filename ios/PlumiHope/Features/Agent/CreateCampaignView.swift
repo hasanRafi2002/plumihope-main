@@ -5,6 +5,7 @@ struct CreateCampaignView: View {
     @StateObject private var viewModel: CreateCampaignViewModel
     @State private var step: Int = 1
     @State private var photoItem: PhotosPickerItem?
+    @State private var coverItem: PhotosPickerItem?
     @Environment(\.dismiss) private var dismiss
     var onCompleted: () -> Void
 
@@ -98,6 +99,31 @@ struct CreateCampaignView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Upload supporting evidence").font(.headline)
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Public cover photo (optional)").font(.subheadline).fontWeight(.semibold)
+                Text("Shown to donors on the campaign. Use a dignified photo and avoid private documents, IDs, or medical records.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                PhotosPicker(selection: $coverItem, matching: .images) {
+                    Label("Add public cover photo", systemImage: "photo")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isUploadingEvidence)
+                .onChange(of: coverItem) { _, newItem in
+                    Task {
+                        guard let newItem = newItem,
+                              let data = try? await newItem.loadTransferable(type: Data.self) else { return }
+                        await viewModel.uploadEvidence(data: data, filename: "cover.jpg", mimeType: "image/jpeg", evidenceType: "RECIPIENT_PHOTO", visibility: "PUBLIC")
+                        coverItem = nil
+                    }
+                }
+            }
+
+            Divider()
+
+            Text("Restricted evidence").font(.subheadline).fontWeight(.semibold)
+
             PhotosPicker(selection: $photoItem, matching: .images) {
                 Label("Add photo evidence", systemImage: "camera")
                     .frame(maxWidth: .infinity)
@@ -122,7 +148,7 @@ struct CreateCampaignView: View {
             }
 
             ForEach(viewModel.evidenceItems) { item in
-                Text("✓ \(item.evidenceType.capitalized)")
+                Text(item.evidenceType == "RECIPIENT_PHOTO" ? "✓ Public cover photo" : "✓ \(item.evidenceType.capitalized)")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
