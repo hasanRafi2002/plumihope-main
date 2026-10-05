@@ -127,6 +127,11 @@ def add_evidence(db: Session, campaign_id: uuid.UUID, user_id: uuid.UUID, payloa
     media = get_media_or_404(db, payload.media_id)
     if media.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this media")
+    if payload.visibility == "PUBLIC" and media.visibility != "PUBLIC":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="PUBLIC evidence requires PUBLIC media",
+        )
 
     data = payload.model_dump()
     return repository.add_evidence(db, campaign_id, user_id, data)
@@ -148,6 +153,8 @@ def discover_campaigns(
     items, total = repository.search_public_campaigns(
         db, category_id, status_filter, search_text, page, page_size
     )
+    items = list(items)
+    attach_cover_media(db, items)
     has_next = (page * page_size) < total
     return {
         "items": items,
@@ -156,6 +163,30 @@ def discover_campaigns(
         "total": total,
         "has_next": has_next,
     }
+
+
+def attach_cover_media(db: Session, campaigns: list) -> None:
+    """Set transient cover_media_id (first PUBLIC RECIPIENT_PHOTO evidence) on each campaign."""
+    if not campaigns:
+        return
+    from app.modules.campaigns.models import CampaignEvidence
+
+    rows = (
+        db.query(CampaignEvidence.campaign_id, CampaignEvidence.media_id)
+        .filter(
+            CampaignEvidence.campaign_id.in_([c.id for c in campaigns]),
+            CampaignEvidence.visibility == "PUBLIC",
+            CampaignEvidence.evidence_type == "RECIPIENT_PHOTO",
+            CampaignEvidence.media_id.isnot(None),
+        )
+        .order_by(CampaignEvidence.created_at.asc())
+        .all()
+    )
+    cover_by_campaign: dict = {}
+    for campaign_id, media_id in rows:
+        cover_by_campaign.setdefault(campaign_id, media_id)
+    for c in campaigns:
+        c.cover_media_id = cover_by_campaign.get(c.id)
 
 
 def get_why_verified(db: Session, campaign_id: uuid.UUID) -> dict:

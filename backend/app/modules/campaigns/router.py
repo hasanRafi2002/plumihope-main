@@ -69,7 +69,9 @@ def list_my_campaigns(
 
 @router.get("/{campaign_id}", response_model=CampaignDetail)
 def get_campaign(campaign_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.get_campaign_or_404(db, campaign_id)
+    campaign = service.get_campaign_or_404(db, campaign_id)
+    service.attach_cover_media(db, [campaign])
+    return campaign
 
 
 @router.post("/{campaign_id}/updates", response_model=CampaignUpdatePublic, status_code=201)

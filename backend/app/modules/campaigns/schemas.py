@@ -47,6 +47,7 @@ class CampaignPublic(BaseModel):
     status: str
     verification_status: str
     created_at: datetime
+    cover_media_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
 
