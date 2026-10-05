@@ -11,6 +11,7 @@ struct Campaign: Codable, Identifiable {
     let status: String
     let verificationStatus: String
     let createdAt: Date
+    var coverMediaId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -23,6 +24,7 @@ struct Campaign: Codable, Identifiable {
         case status
         case verificationStatus = "verification_status"
         case createdAt = "created_at"
+        case coverMediaId = "cover_media_id"
     }
 
     var targetAmountValue: Double { Double(targetAmount) ?? 0 }
@@ -57,6 +59,7 @@ struct CampaignDetail: Codable, Identifiable {
     let status: String
     let verificationStatus: String
     let createdAt: Date
+    var coverMediaId: UUID?
     let helpRequestId: UUID
     let agentProfileId: UUID
     let recipientName: String?
@@ -74,6 +77,7 @@ struct CampaignDetail: Codable, Identifiable {
         case status
         case verificationStatus = "verification_status"
         case createdAt = "created_at"
+        case coverMediaId = "cover_media_id"
         case helpRequestId = "help_request_id"
         case agentProfileId = "agent_profile_id"
         case recipientName = "recipient_name"

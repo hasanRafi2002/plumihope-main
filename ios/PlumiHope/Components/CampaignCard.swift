@@ -5,9 +5,16 @@ struct CampaignCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray5))
-                .frame(height: 140)
+            Group {
+                if let coverId = campaign.coverMediaId {
+                    AuthenticatedAsyncImage(mediaId: coverId)
+                } else {
+                    Color(.systemGray5)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 140)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Text("✓ Verified Case")
                 .font(.caption)

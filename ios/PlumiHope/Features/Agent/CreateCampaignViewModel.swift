@@ -87,15 +87,15 @@ final class CreateCampaignViewModel: ObservableObject {
         }
     }
 
-    func uploadEvidence(data: Data, filename: String, mimeType: String, evidenceType: String) async {
+    func uploadEvidence(data: Data, filename: String, mimeType: String, evidenceType: String, visibility: String = "RESTRICTED") async {
         guard let campaign = campaign else { return }
         isUploadingEvidence = true
         evidenceErrorMessage = nil
         defer { isUploadingEvidence = false }
 
         do {
-            let media = try await mediaService.uploadMedia(fileData: data, filename: filename, mimeType: mimeType)
-            let evidence = try await campaignService.addEvidence(campaignId: campaign.id, mediaId: media.id, evidenceType: evidenceType)
+            let media = try await mediaService.uploadMedia(fileData: data, filename: filename, mimeType: mimeType, visibility: visibility)
+            let evidence = try await campaignService.addEvidence(campaignId: campaign.id, mediaId: media.id, evidenceType: evidenceType, visibility: visibility)
             evidenceItems.append(evidence)
         } catch {
             evidenceErrorMessage = error.localizedDescription

@@ -21,9 +21,16 @@ struct CampaignDetailView: View {
             } else if let campaign = viewModel.campaign {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemGray5))
-                            .frame(height: 200)
+                        Group {
+                            if let coverId = campaign.coverMediaId {
+                                AuthenticatedAsyncImage(mediaId: coverId)
+                            } else {
+                                Color(.systemGray5)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
 
                         Text("✓ VERIFIED CASE")
                             .font(.caption)
