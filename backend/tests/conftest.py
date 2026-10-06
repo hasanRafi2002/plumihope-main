@@ -37,8 +37,16 @@ def _schema():
     engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def _seeded(_schema):
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+    import seed_rbac
+    seed_rbac.main()
+
+
 @pytest.fixture
-def db(_schema):
+def db(_seeded):
     """Per-test session inside an outer transaction that is always rolled back."""
     from app.core.database import engine
 
@@ -64,3 +72,53 @@ def client(db):
         yield TestClient(app)
     finally:
         app.dependency_overrides.clear()
+
+
+# ---------------- factories ----------------
+import itertools  # noqa: E402
+import uuid  # noqa: E402
+
+_counter = itertools.count(1)
+
+
+@pytest.fixture
+def make_user(db):
+    """make_user(roles=("USER",), agent_status=None) -> (user, auth_headers)."""
+    from app.core.security import create_access_token, hash_password
+    from app.modules.agents.models import AgentProfile
+    from app.modules.users.models import Role, User, UserRole
+
+    pw_hash = hash_password("Test-pass-123")
+
+    def _make(roles=("USER",), agent_status=None):
+        n = next(_counter)
+        user = User(email=f"user{n}-{uuid.uuid4().hex[:6]}@example.test", password_hash=pw_hash, full_name=f"Test User {n}", status="ACTIVE")
+        db.add(user)
+        db.flush()
+        for name in roles:
+            role = db.query(Role).filter(Role.name == name).one()
+            db.add(UserRole(user_id=user.id, role_id=role.id))
+        if agent_status:
+            db.add(AgentProfile(user_id=user.id, status=agent_status, full_name=user.full_name))
+        db.flush()
+        return user, {"Authorization": f"Bearer {create_access_token(user.id)}"}
+
+    return _make
+
+
+@pytest.fixture
+def eligible_help_request(db, make_user):
+    from app.modules.help_requests.models import HelpRequest
+
+    owner, _ = make_user()
+    hr = HelpRequest(user_id=owner.id, category="MEDICAL", description="test case", status="ELIGIBLE")
+    db.add(hr)
+    db.flush()
+    return hr
+
+
+@pytest.fixture
+def category_id(db):
+    from app.modules.campaigns.models import CampaignCategory
+
+    return db.query(CampaignCategory).first().id
