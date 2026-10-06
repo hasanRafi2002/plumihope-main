@@ -15,6 +15,9 @@ class Settings(BaseSettings):
 
     payment_provider: str = "sandbox"
     payment_api_key: str = ""
+    payment_webhook_secret: str = ""
+    # DEV ONLY: accept unsigned webhooks for provider "sandbox". Ignored when app_env == "production".
+    payment_webhook_allow_unsigned_sandbox: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

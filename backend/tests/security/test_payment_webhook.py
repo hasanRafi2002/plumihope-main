@@ -1,14 +1,18 @@
 # Payment verification security (blueprint sec. 29-32, 83, 89, 110; UI/UX "Payment UX rule"):
 # only a server-side webhook may confirm a payment; duplicates/forgeries must not move money.
+import json
 from decimal import Decimal
 
 import pytest
+
+from app.core.config import settings
 
 from app.modules.audit.models import AuditLog
 from app.modules.campaigns.models import Campaign
 from app.modules.donations.models import Donation
 from app.modules.notifications.models import Notification
 from app.modules.payments.models import Payment
+from app.modules.payments.signature import SIGNATURE_HEADER, compute_signature
 
 WEBHOOK = "/api/v1/payments/webhooks/sandbox"
 
@@ -25,8 +29,29 @@ def scenario(db, make_user, make_campaign, make_donation, make_payment):
     return {"campaign": campaign, "donor": donor, "donation": donation, "payment": payment}
 
 
+TEST_SECRET = "test-webhook-secret"
+
+
+@pytest.fixture(autouse=True)
+def _webhook_signing(monkeypatch):
+    monkeypatch.setattr(settings, "payment_webhook_secret", TEST_SECRET)
+    monkeypatch.setattr(settings, "payment_webhook_allow_unsigned_sandbox", False)
+
+
+def _body(ref):
+    return json.dumps({"provider_reference": ref}).encode()
+
+
+def _post_raw(client, body, signature=None, url=WEBHOOK):
+    headers = {"Content-Type": "application/json"}
+    if signature is not None:
+        headers[SIGNATURE_HEADER] = signature
+    return client.post(url, content=body, headers=headers)
+
+
 def _fire(client, ref):
-    return client.post(WEBHOOK, json={"provider_reference": ref})
+    body = _body(ref)
+    return _post_raw(client, body, compute_signature(TEST_SECRET, body))
 
 
 def _reload(db, *objs):
@@ -143,11 +168,9 @@ def test_provider_failure_marks_donation_failed(client, db, scenario, provider_f
 
 
 # ---------- signature (blueprint sec. 110 step 1) ----------
-@pytest.mark.xfail(strict=True, reason="KNOWN GAP: webhook has no signature validation; anyone with a provider_reference can confirm it. "
-                                       "Add HMAC check, then update these webhook tests to send a valid signature.")
 def test_unsigned_webhook_is_rejected(client, db, scenario):
     s = scenario
-    r = _fire(client, s["payment"].provider_reference)
+    r = _post_raw(client, _body(s["payment"].provider_reference))
     assert r.status_code in (401, 403)
     payment, = _reload(db, s["payment"])
     assert payment.status == "INITIATED"
@@ -170,3 +193,54 @@ def test_webhook_is_atomic_if_a_late_step_fails(client, db, scenario, monkeypatc
     assert donation.status == "PENDING"
     assert campaign.raised_amount == Decimal("0")
     assert _audit_count(db, donation) == 0
+
+
+# ---------- signature (blueprint sec. 110 step 1) ----------
+def _assert_untouched(db, s):
+    campaign, donation, payment = _reload(db, s["campaign"], s["donation"], s["payment"])
+    assert campaign.raised_amount == Decimal("0")
+    assert donation.status == "PENDING" and payment.status == "INITIATED"
+
+
+def test_wrong_signature_is_rejected(client, db, scenario):
+    r = _post_raw(client, _body(scenario["payment"].provider_reference), "0" * 64)
+    assert r.status_code == 401
+    _assert_untouched(db, scenario)
+
+
+def test_signature_for_a_different_body_is_rejected(client, db, scenario):
+    sig = compute_signature(TEST_SECRET, _body("SANDBOX-some-other-ref"))
+    r = _post_raw(client, _body(scenario["payment"].provider_reference), sig)
+    assert r.status_code == 401
+    _assert_untouched(db, scenario)
+
+
+def test_missing_secret_fails_closed(client, db, scenario, monkeypatch):
+    monkeypatch.setattr(settings, "payment_webhook_secret", "")
+    body = _body(scenario["payment"].provider_reference)
+    r = _post_raw(client, body, compute_signature("", body))
+    assert r.status_code == 401
+    _assert_untouched(db, scenario)
+
+
+def test_unsigned_sandbox_allowed_only_with_dev_flag(client, db, scenario, monkeypatch):
+    monkeypatch.setattr(settings, "payment_webhook_allow_unsigned_sandbox", True)
+    monkeypatch.setattr(settings, "app_env", "development")
+    r = _post_raw(client, _body(scenario["payment"].provider_reference))
+    assert r.status_code == 200, r.text
+
+
+def test_dev_flag_is_ignored_in_production(client, db, scenario, monkeypatch):
+    monkeypatch.setattr(settings, "payment_webhook_allow_unsigned_sandbox", True)
+    monkeypatch.setattr(settings, "app_env", "production")
+    r = _post_raw(client, _body(scenario["payment"].provider_reference))
+    assert r.status_code == 401
+    _assert_untouched(db, scenario)
+
+
+def test_dev_flag_does_not_apply_to_other_providers(client, db, scenario, monkeypatch):
+    monkeypatch.setattr(settings, "payment_webhook_allow_unsigned_sandbox", True)
+    r = _post_raw(client, _body(scenario["payment"].provider_reference),
+                  url="/api/v1/payments/webhooks/realgateway")
+    assert r.status_code == 401
+    _assert_untouched(db, scenario)
