@@ -21,7 +21,7 @@ def scenario(db, make_user, make_campaign, make_donation, make_payment):
     donor, _ = make_user()
     donation = make_donation(donor, campaign, status="PENDING", amount="500.00")
     payment = make_payment(donation, status="INITIATED")
-    db.flush()
+    db.commit()  # persist fixtures: the webhook's rollback-on-error must not discard test setup
     return {"campaign": campaign, "donor": donor, "donation": donation, "payment": payment}
 
 
@@ -107,6 +107,7 @@ def test_failed_or_cancelled_payment_cannot_be_verified(client, db, make_user, m
     donor, _ = make_user()
     donation = make_donation(donor, campaign, status=don_status)
     payment = make_payment(donation, status=pay_status)
+    db.commit()
     r = _fire(client, payment.provider_reference)
     assert r.status_code == 409
     campaign, donation, payment = _reload(db, campaign, donation, payment)
