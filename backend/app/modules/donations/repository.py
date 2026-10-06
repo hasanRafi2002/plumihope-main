@@ -27,9 +27,12 @@ def list_by_user(db: Session, user_id: uuid.UUID) -> list[Donation]:
     return db.query(Donation).filter(Donation.user_id == user_id).order_by(Donation.created_at.desc()).all()
 
 
-def update_status(db: Session, donation: Donation, new_status: str) -> Donation:
+def update_status(db: Session, donation: Donation, new_status: str, commit: bool = True) -> Donation:
     donation.status = new_status
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(donation)
     return donation
 

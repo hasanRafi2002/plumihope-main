@@ -134,8 +134,6 @@ def test_provider_failure_marks_payment_failed_and_adds_no_money(client, db, sce
     assert campaign.raised_amount == Decimal("0")
 
 
-@pytest.mark.xfail(strict=True, reason="KNOWN GAP: provider failure leaves the donation stuck in PENDING (PENDING->FAILED is allowed "
-                                       "but process_webhook never applies it). Fix, then remove this xfail.")
 def test_provider_failure_marks_donation_failed(client, db, scenario, provider_fails):
     s = scenario
     _fire(client, s["payment"].provider_reference)
@@ -152,3 +150,22 @@ def test_unsigned_webhook_is_rejected(client, db, scenario):
     assert r.status_code in (401, 403)
     payment, = _reload(db, s["payment"])
     assert payment.status == "INITIATED"
+
+
+# ---------- atomicity (blueprint sec. 83: single transaction, rollback on any failure) ----------
+def test_webhook_is_atomic_if_a_late_step_fails(client, db, scenario, monkeypatch):
+    s = scenario
+    db.commit()  # persist fixture rows so the webhook's own rollback cannot discard them
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("simulated failure after payment + donation were updated")
+
+    monkeypatch.setattr("app.modules.campaigns.repository.increment_raised_amount", boom)
+    with pytest.raises(RuntimeError):
+        _fire(client, s["payment"].provider_reference)
+
+    campaign, donation, payment = _reload(db, s["campaign"], s["donation"], s["payment"])
+    assert payment.status == "INITIATED"
+    assert donation.status == "PENDING"
+    assert campaign.raised_amount == Decimal("0")
+    assert _audit_count(db, donation) == 0

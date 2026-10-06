@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.notifications.models import Notification
 
 
-def create_notification(db: Session, user_id: uuid.UUID, notification_type: str, title: str, body: str | None = None) -> Notification:
+def create_notification(db: Session, user_id: uuid.UUID, notification_type: str, title: str, body: str | None = None, commit: bool = True) -> Notification:
     notification = Notification(
         user_id=user_id,
         notification_type=notification_type,
@@ -14,7 +14,10 @@ def create_notification(db: Session, user_id: uuid.UUID, notification_type: str,
         body=body,
     )
     db.add(notification)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(notification)
     return notification
 

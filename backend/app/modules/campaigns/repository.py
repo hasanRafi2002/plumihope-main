@@ -66,9 +66,12 @@ def update_fields(db: Session, campaign: Campaign, updates: dict) -> Campaign:
     return campaign
 
 
-def update_status(db: Session, campaign: Campaign, new_status: str) -> Campaign:
+def update_status(db: Session, campaign: Campaign, new_status: str, commit: bool = True) -> Campaign:
     campaign.status = new_status
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(campaign)
     return campaign
 
@@ -132,9 +135,12 @@ def search_public_campaigns(
     return items, total
 
 
-def increment_raised_amount(db: Session, campaign_id: uuid.UUID, amount) -> Campaign:
+def increment_raised_amount(db: Session, campaign_id: uuid.UUID, amount, commit: bool = True) -> Campaign:
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).with_for_update().first()
     campaign.raised_amount = campaign.raised_amount + amount
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(campaign)
     return campaign

@@ -25,6 +25,6 @@ def mark_notification_read(db: Session, notification_id: uuid.UUID, user_id: uui
     return repository.mark_as_read(db, notification)
 
 
-def notify(db: Session, user_id: uuid.UUID, notification_type: str, title: str, body: str | None = None) -> Notification:
+def notify(db: Session, user_id: uuid.UUID, notification_type: str, title: str, body: str | None = None, commit: bool = True) -> Notification:
     """Convenience function for other modules to create notifications."""
-    return repository.create_notification(db, user_id, notification_type, title, body)
+    return repository.create_notification(db, user_id, notification_type, title, body, commit=commit)
