@@ -169,3 +169,35 @@ def make_campaign(db, category_id):
         return camp
 
     return _make
+
+
+@pytest.fixture
+def make_donation(db):
+    from app.modules.donations.models import Donation
+
+    def _make(user, campaign, status="INITIATED", amount="500.00"):
+        d = Donation(campaign_id=campaign.id, user_id=user.id, amount=amount, currency="BDT", status=status)
+        db.add(d)
+        db.flush()
+        return d
+
+    return _make
+
+
+@pytest.fixture
+def make_payment(db):
+    from app.modules.payments.models import Payment
+
+    def _make(donation, status="INITIATED"):
+        p = Payment(
+            donation_id=donation.id,
+            provider="sandbox",
+            provider_reference=f"SANDBOX-{uuid.uuid4()}",
+            amount=donation.amount,
+            status=status,
+        )
+        db.add(p)
+        db.flush()
+        return p
+
+    return _make
