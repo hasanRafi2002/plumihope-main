@@ -122,3 +122,50 @@ def category_id(db):
     from app.modules.campaigns.models import CampaignCategory
 
     return db.query(CampaignCategory).first().id
+
+
+@pytest.fixture
+def make_media(db):
+    from app.modules.media.models import Media
+
+    def _make(owner, visibility="RESTRICTED"):
+        m = Media(
+            owner_id=owner.id,
+            object_key=f"test/{uuid.uuid4().hex}.jpg",
+            mime_type="image/jpeg",
+            size_bytes=10,
+            visibility=visibility,
+        )
+        db.add(m)
+        db.flush()
+        return m
+
+    return _make
+
+
+@pytest.fixture
+def make_campaign(db, category_id):
+    """make_campaign(agent_user, status="DRAFT") -> Campaign owned by that agent."""
+    from app.modules.agents.models import AgentProfile
+    from app.modules.campaigns.models import Campaign
+    from app.modules.help_requests.models import HelpRequest
+
+    def _make(agent_user, status="DRAFT"):
+        profile = db.query(AgentProfile).filter(AgentProfile.user_id == agent_user.id).one()
+        hr = HelpRequest(user_id=agent_user.id, category="MEDICAL", description="idor test", status="CONVERTED_TO_CAMPAIGN")
+        db.add(hr)
+        db.flush()
+        camp = Campaign(
+            help_request_id=hr.id,
+            agent_profile_id=profile.id,
+            category_id=category_id,
+            title="Original title",
+            description="orig",
+            target_amount=1000,
+            status=status,
+        )
+        db.add(camp)
+        db.flush()
+        return camp
+
+    return _make
