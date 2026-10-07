@@ -48,10 +48,28 @@ def get_media_or_404(db: Session, media_id: uuid.UUID) -> Media:
     return media
 
 
+def _is_publicly_attached(db: Session, media_id: uuid.UUID) -> bool:
+    # PUBLIC media is readable by strangers only while it is PUBLIC evidence of a publicly visible campaign.
+    from app.modules.campaigns.models import Campaign, CampaignEvidence
+    from app.modules.campaigns.repository import PUBLIC_CAMPAIGN_STATUSES
+
+    row = (
+        db.query(CampaignEvidence.id)
+        .join(Campaign, Campaign.id == CampaignEvidence.campaign_id)
+        .filter(
+            CampaignEvidence.media_id == media_id,
+            CampaignEvidence.visibility == "PUBLIC",
+            Campaign.status.in_(PUBLIC_CAMPAIGN_STATUSES),
+        )
+        .first()
+    )
+    return row is not None
+
+
 def check_media_view_access(db: Session, media: Media, current_user_id: uuid.UUID) -> None:
     if media.owner_id == current_user_id:
         return
-    if media.visibility == "PUBLIC":
+    if media.visibility == "PUBLIC" and _is_publicly_attached(db, media.id):
         return
     permission_codes = users_repository.get_user_permission_codes(db, current_user_id)
     if "campaign:review" in permission_codes:
